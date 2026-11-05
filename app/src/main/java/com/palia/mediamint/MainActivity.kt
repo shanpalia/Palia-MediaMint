@@ -244,8 +244,16 @@ private fun MediaMintApp() {
                 )
                 tabs.forEach { (label, icon, _) ->
                     NavigationBarItem(
-                        selected = selectedTab == label,
-                        onClick = { selectedTab = label },
+                        selected = selectedTab == label && activeTool == null && resultFile == null,
+                        onClick = {
+                            resultFile = null
+                            activeTool = null
+                            selectedTab = label
+                            if (label == "Files") {
+                                libraryFiles.clear()
+                                libraryFiles.addAll(MediaLibrary.list(context))
+                            }
+                        },
                         icon = { Icon(icon, contentDescription = label) },
                         label = { Text(label, fontWeight = if (selectedTab == label) FontWeight.Bold else FontWeight.Medium) }
                     )
