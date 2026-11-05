@@ -81,6 +81,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 private val Mint = Color(0xFF07966F)
 private val DeepMint = Color(0xFF087B60)
@@ -154,14 +156,43 @@ private fun MediaMintApp() {
     var showInfo by remember { mutableStateOf(false) }
     val snackbar = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
+    var outputToSave by remember { mutableStateOf<ProcessedMedia?>(null) }
+    val saveFile = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.CreateDocument("*/*")
+    ) { destination ->
+        val output = outputToSave
+        if (destination != null && output != null) {
+            scope.launch {
+                try {
+                    withContext(Dispatchers.IO) {
+                        context.contentResolver.openOutputStream(destination)?.use { it.write(output.bytes) }
+                            ?: error("Could not create output file.")
+                    }
+                    snackbar.showSnackbar("Saved: " + output.fileName)
+                } catch (error: Exception) {
+                    snackbar.showSnackbar("Save failed: " + (error.localizedMessage ?: "Unknown error"))
+                }
+            }
+        }
+    }
 
     val filePicker = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.OpenDocument()
     ) { uri ->
         pickedFile = uri
-        if (uri != null) {
+        val tool = activeTool
+        if (uri != null && tool != null) {
             scope.launch {
-                snackbar.showSnackbar("File selected. Online conversion service will be connected in the backend phase.")
+                try {
+                    val result = withContext(Dispatchers.IO) {
+                        MediaProcessing.process(context, uri, tool.title)
+                    }
+                    outputToSave = result
+                    snackbar.showSnackbar("Processing complete. Choose where to save the result.")
+                    saveFile.launch(result.fileName)
+                } catch (error: Exception) {
+                    snackbar.showSnackbar(error.localizedMessage ?: "This feature is not available yet.")
+                }
             }
         }
     }
@@ -413,6 +444,21 @@ private fun ToolsContent(modifier: Modifier = Modifier, onToolClick: (MediaTool)
         items(popularTools.size) { index ->
             val tool = popularTools[index]
             ToolRow(tool) { onToolClick(tool) }
+        }
+        item {
+            ToolRow(MediaTool("Image Compressor", "Resize and reduce image size offline", Icons.Default.Image, arrayOf("image/*"), Color(0xFF168DCE), Color(0xFFEEF8FF))) {
+                onToolClick(MediaTool("Image Compressor", "Resize and reduce image size offline", Icons.Default.Image, arrayOf("image/*"), Color(0xFF168DCE), Color(0xFFEEF8FF)))
+            }
+        }
+        item {
+            ToolRow(MediaTool("JPG to PNG", "Convert JPG images to PNG", Icons.Default.Image, arrayOf("image/*"), Color(0xFF168DCE), Color(0xFFEEF8FF))) {
+                onToolClick(MediaTool("JPG to PNG", "Convert JPG images to PNG", Icons.Default.Image, arrayOf("image/*"), Color(0xFF168DCE), Color(0xFFEEF8FF)))
+            }
+        }
+        item {
+            ToolRow(MediaTool("PNG to JPG", "Convert PNG images to JPG", Icons.Default.Image, arrayOf("image/*"), Color(0xFF168DCE), Color(0xFFEEF8FF))) {
+                onToolClick(MediaTool("PNG to JPG", "Convert PNG images to JPG", Icons.Default.Image, arrayOf("image/*"), Color(0xFF168DCE), Color(0xFFEEF8FF)))
+            }
         }
         item {
             ToolRow(MediaTool("AI Watermark Remover", "Select an image to continue", Icons.Default.AutoAwesome, arrayOf("image/*"), DeepMint, PaleMint)) {
