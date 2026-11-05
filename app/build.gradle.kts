@@ -34,6 +34,7 @@ android {
 dependencies {
     implementation(libs.androidx.core.ktx)
     implementation("androidx.core:core-splashscreen:1.2.0")
+    implementation("dev.ffmpegkit-maintained:ffmpeg-kit-full:8.1.9")
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.navigation.compose)
