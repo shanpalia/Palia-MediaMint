@@ -521,3 +521,59 @@ private fun SimplePage(title: String, subtitle: String, icon: ImageVector, modif
         Text(subtitle, color = Muted, fontSize = 14.sp, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
     }
 }
+
+
+private fun openLibraryFile(context: android.content.Context, item: LibraryFile) {
+    val uri = FileProvider.getUriForFile(context, context.packageName + ".fileprovider", item.file)
+    val intent = Intent(Intent.ACTION_VIEW).setDataAndType(uri, item.mimeType)
+        .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+    context.startActivity(Intent.createChooser(intent, "Open with"))
+}
+
+private fun shareLibraryFile(context: android.content.Context, item: LibraryFile) {
+    val uri = FileProvider.getUriForFile(context, context.packageName + ".fileprovider", item.file)
+    val intent = Intent(Intent.ACTION_SEND).setType(item.mimeType)
+        .putExtra(Intent.EXTRA_STREAM, uri).addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+    context.startActivity(Intent.createChooser(intent, "Share file"))
+}
+
+@Composable
+private fun ResultPage(item: LibraryFile, modifier: Modifier = Modifier, onPlay: () -> Unit, onShare: () -> Unit, onSave: () -> Unit, onDone: () -> Unit) {
+    Column(modifier.fillMaxSize().padding(24.dp), verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally) {
+        Icon(Icons.Default.CheckCircle, null, tint = Mint, modifier = Modifier.size(64.dp))
+        Spacer(Modifier.height(16.dp))
+        Text("Conversion Complete", color = Ink, fontSize = 23.sp, fontWeight = FontWeight.ExtraBold)
+        Spacer(Modifier.height(10.dp))
+        Text(item.fileName, color = Ink, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+        Text(android.text.format.Formatter.formatShortFileSize(LocalContext.current, item.sizeBytes), color = Muted, fontSize = 13.sp)
+        Spacer(Modifier.height(24.dp))
+        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            androidx.compose.material3.Button(onClick = onPlay) { Text(if (item.mimeType.startsWith("audio/") || item.mimeType.startsWith("video/")) "Play" else "Open") }
+            androidx.compose.material3.OutlinedButton(onClick = onSave) { Text("Save") }
+        }
+        androidx.compose.material3.OutlinedButton(onClick = onShare, modifier = Modifier.fillMaxWidth()) { Text("Share") }
+        TextButton(onClick = onDone) { Text("Go to My Files") }
+    }
+}
+
+@Composable
+private fun FilesPage(files: List<LibraryFile>, modifier: Modifier = Modifier, onOpen: (LibraryFile) -> Unit, onShare: (LibraryFile) -> Unit, onSave: (LibraryFile) -> Unit) {
+    if (files.isEmpty()) {
+        SimplePage("Your Files", "Your recent conversions will appear here.", Icons.Default.Folder, modifier)
+    } else {
+        LazyColumn(modifier.fillMaxSize().padding(horizontal = 16.dp), contentPadding = androidx.compose.foundation.layout.PaddingValues(vertical = 16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            item { Text("Your Files", color = Ink, fontSize = 24.sp, fontWeight = FontWeight.ExtraBold) }
+            items(files, key = { it.id }) { item ->
+                Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(Color.White).padding(14.dp)) {
+                    Text(item.fileName, color = Ink, fontWeight = FontWeight.Bold, maxLines = 2)
+                    Text(android.text.format.Formatter.formatShortFileSize(LocalContext.current, item.sizeBytes), color = Muted, fontSize = 12.sp)
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        TextButton(onClick = { onOpen(item) }) { Text(if (item.mimeType.startsWith("audio/") || item.mimeType.startsWith("video/")) "Play" else "Open") }
+                        TextButton(onClick = { onSave(item) }) { Text("Save") }
+                        TextButton(onClick = { onShare(item) }) { Text("Share") }
+                    }
+                }
+            }
+        }
+    }
+}
