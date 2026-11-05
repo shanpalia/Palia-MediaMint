@@ -1,11 +1,13 @@
 package com.palia.mediamint
 
 import android.app.Activity
+import android.content.Intent
 import android.net.Uri
 import android.provider.OpenableColumns
 import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.core.content.FileProvider
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
