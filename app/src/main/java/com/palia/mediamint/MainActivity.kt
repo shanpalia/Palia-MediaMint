@@ -15,11 +15,11 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
-import androidx.compose.foundation.layout.calculateTopPadding
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
@@ -209,9 +209,9 @@ private fun HomeContent(
     onNotifications: () -> Unit
 ) {
     LazyColumn(
-        modifier = modifier.fillMaxSize(),
+        modifier = modifier.fillMaxSize().windowInsetsPadding(WindowInsets.statusBars),
         contentPadding = androidx.compose.foundation.layout.PaddingValues(
-            start = 18.dp, top = WindowInsets.statusBars.asPaddingValues().calculateTopPadding() + 12.dp, end = 18.dp, bottom = 20.dp
+            start = 18.dp, top = 12.dp, end = 18.dp, bottom = 20.dp
         ),
         verticalArrangement = Arrangement.spacedBy(18.dp)
     ) {
