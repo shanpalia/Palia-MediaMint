@@ -139,8 +139,8 @@ private fun MediaMintApp() {
     var activeTool by remember { mutableStateOf<MediaTool?>(null) }
     var resultFile by remember { mutableStateOf<LibraryFile?>(null) }
     val libraryFiles = remember { mutableStateListOf<LibraryFile>() }
-    LaunchedEffect(Unit) { libraryFiles.clear(); libraryFiles.addAll(MediaLibrary.list(context)) }
     val context = LocalContext.current
+    LaunchedEffect(Unit) { libraryFiles.clear(); libraryFiles.addAll(MediaLibrary.list(context)) }
     val notificationPermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { }
     LaunchedEffect(Unit) {
         if (Build.VERSION.SDK_INT >= 33) {
