@@ -123,7 +123,7 @@ private data class MediaTool(
 )
 
 private val popularTools = listOf(
-    MediaTool("Video to Audio", "Extract audio as M4A from video", Icons.Default.VideoLibrary, arrayOf("video/*"), Color(0xFF7854D8), Color(0xFFF3EEFF)),
+    MediaTool("Video to MP3", "Extract audio as high-quality MP3", Icons.Default.VideoLibrary, arrayOf("video/*"), Color(0xFF7854D8), Color(0xFFF3EEFF)),
     MediaTool("Video to Image", "Extract the first video frame", Icons.Default.Collections, arrayOf("video/*"), Color(0xFF168DCE), Color(0xFFEBF7FF)),
     MediaTool("Image to PDF", "Create PDF from photos", Icons.Default.Image, arrayOf("image/*"), Color(0xFFE45D63), Color(0xFFFFF0F1)),
     MediaTool("PDF to Image", "Export pages as images", Icons.Default.PictureAsPdf, arrayOf("application/pdf"), Color(0xFF7854D8), Color(0xFFF3EEFF))
