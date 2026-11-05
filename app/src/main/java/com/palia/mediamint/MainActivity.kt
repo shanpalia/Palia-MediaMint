@@ -2,6 +2,7 @@ package com.palia.mediamint
 
 import android.app.Activity
 import android.net.Uri
+import android.provider.OpenableColumns
 import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -65,6 +66,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
@@ -133,6 +135,9 @@ private val popularTools = listOf(
 private fun MediaMintApp() {
     var selectedTab by remember { mutableStateOf("Home") }
     var activeTool by remember { mutableStateOf<MediaTool?>(null) }
+    var resultFile by remember { mutableStateOf<LibraryFile?>(null) }
+    val libraryFiles = remember { mutableStateListOf<LibraryFile>() }
+    LaunchedEffect(Unit) { libraryFiles.clear(); libraryFiles.addAll(MediaLibrary.list(context)) }
     val context = LocalContext.current
     val notificationPermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { }
     LaunchedEffect(Unit) {
@@ -145,7 +150,8 @@ private fun MediaMintApp() {
         }
     }
     BackHandler {
-        if (selectedTab != "Home") {
+        if (resultFile != null) { resultFile = null }
+        else if (selectedTab != "Home") {
             selectedTab = "Home"
             activeTool = null
         } else {
@@ -156,7 +162,7 @@ private fun MediaMintApp() {
     var showInfo by remember { mutableStateOf(false) }
     val snackbar = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
-    var outputToSave by remember { mutableStateOf<ProcessedMedia?>(null) }
+    var outputToSave by remember { mutableStateOf<LibraryFile?>(null) }
     val saveFile = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.CreateDocument("*/*")
     ) { destination ->
@@ -165,7 +171,7 @@ private fun MediaMintApp() {
             scope.launch {
                 try {
                     withContext(Dispatchers.IO) {
-                        context.contentResolver.openOutputStream(destination)?.use { it.write(output.bytes) }
+                        output.file.inputStream().use { input -> context.contentResolver.openOutputStream(destination)?.use { input.copyTo(it) } }
                             ?: error("Could not create output file.")
                     }
                     snackbar.showSnackbar("Saved: " + output.fileName)
@@ -187,9 +193,23 @@ private fun MediaMintApp() {
                     val result = withContext(Dispatchers.IO) {
                         MediaProcessing.process(context, uri, tool.title)
                     }
-                    outputToSave = result
-                    snackbar.showSnackbar("Processing complete. Choose where to save the result.")
-                    saveFile.launch(result.fileName)
+                    val sourceName = context.contentResolver.query(uri, arrayOf(OpenableColumns.DISPLAY_NAME), null, null, null)?.use { cursor ->
+                        if (cursor.moveToFirst()) cursor.getString(0) else null
+                    }
+                    val base = sourceName?.substringBeforeLast('.', sourceName)?.takeIf { it.isNotBlank() } ?: "Palia_Media"
+                    val extension = when (result.mimeType) {
+                        "audio/mpeg" -> ".mp3"
+                        "image/jpeg" -> ".jpg"
+                        "image/png" -> ".png"
+                        "application/pdf" -> ".pdf"
+                        "application/zip" -> ".zip"
+                        else -> "." + result.fileName.substringAfterLast('.', "bin")
+                    }
+                    val saved = withContext(Dispatchers.IO) { MediaLibrary.save(context, result.copy(fileName = base + extension)) }
+                    outputToSave = saved
+                    libraryFiles.clear()
+                    libraryFiles.addAll(MediaLibrary.list(context))
+                    resultFile = saved
                 } catch (error: Exception) {
                     snackbar.showSnackbar(error.localizedMessage ?: "This feature is not available yet.")
                 }
@@ -227,7 +247,13 @@ private fun MediaMintApp() {
             }
         }
     ) { padding ->
-        when (selectedTab) {
+        if (resultFile != null) {
+            ResultPage(item = resultFile!!, modifier = Modifier.padding(padding),
+                onPlay = { openLibraryFile(context, resultFile!!) },
+                onShare = { shareLibraryFile(context, resultFile!!) },
+                onSave = { outputToSave = resultFile; saveFile.launch(resultFile!!.fileName) },
+                onDone = { resultFile = null; selectedTab = "Files" })
+        } else when (selectedTab) {
             "Home" -> HomeContent(
                 modifier = Modifier.padding(padding),
                 onToolClick = ::openTool,
@@ -239,7 +265,10 @@ private fun MediaMintApp() {
                 onNotifications = { showInfo = true }
             )
             "Tools" -> ToolsContent(Modifier.padding(padding), ::openTool)
-            "Files" -> SimplePage("Your Files", "Your recent conversions will appear here.", Icons.Default.Folder, Modifier.padding(padding))
+            "Files" -> FilesPage(files = libraryFiles, modifier = Modifier.padding(padding),
+                onOpen = { openLibraryFile(context, it) },
+                onShare = { shareLibraryFile(context, it) },
+                onSave = { outputToSave = it; saveFile.launch(it.fileName) })
             "Pro" -> SimplePage("Palia MediaMint Pro", "Premium plans and limits will be configured after the online service is ready.", Icons.Default.Star, Modifier.padding(padding))
             else -> SimplePage("More", "Settings • Help & Support • About Palia MediaMint", Icons.Default.Settings, Modifier.padding(padding))
         }
