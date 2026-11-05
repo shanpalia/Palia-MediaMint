@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.PaliaMediaMint" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">#F7FFFB</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/ic_splash_logo</item>
+        <item name="postSplashScreenTheme">@style/Theme.PaliaMediaMint.App</item>
+    </style>
+    <style name="Theme.PaliaMediaMint.App" parent="android:style/Theme.Material.Light.NoActionBar">
+        <item name="android:fontFamily">sans</item>
+        <item name="android:windowLightStatusBar">true</item>
+        <item name="android:statusBarColor">#F8FCFA</item>
+        <item name="android:navigationBarColor">#FFFFFF</item>
+        <item name="android:windowLightNavigationBar">true</item>
+        <item name="android:colorAccent">#07966F</item>
+        <item name="android:windowBackground">#F8FCFA</item>
+    </style>
+</resources>
