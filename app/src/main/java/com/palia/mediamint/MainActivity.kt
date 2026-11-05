@@ -263,10 +263,11 @@ private fun MediaMintApp() {
     ) { padding ->
         if (resultFile != null) {
             ResultPage(item = resultFile!!, modifier = Modifier.padding(padding),
+                onBack = { resultFile = null; activeTool = null; selectedTab = "Files" },
                 onPlay = { openLibraryFile(context, resultFile!!) },
                 onShare = { shareLibraryFile(context, resultFile!!) },
                 onSave = { outputToSave = resultFile; saveFile.launch(resultFile!!.fileName) },
-                onDone = { resultFile = null; selectedTab = "Files" })
+                onHistory = { resultFile = null; activeTool = null; selectedTab = "Files"; libraryFiles.clear(); libraryFiles.addAll(MediaLibrary.list(context)) })
         } else if (activeTool != null) {
             ToolWorkspace(tool = activeTool!!, isProcessing = isProcessing, modifier = Modifier.padding(padding), onBack = { activeTool = null }, onChooseFile = { if (!isProcessing) filePicker.launch(activeTool!!.mimeTypes) })
         } else when (selectedTab) {
@@ -554,8 +555,14 @@ private fun shareLibraryFile(context: android.content.Context, item: LibraryFile
 }
 
 @Composable
-private fun ResultPage(item: LibraryFile, modifier: Modifier = Modifier, onPlay: () -> Unit, onShare: () -> Unit, onSave: () -> Unit, onDone: () -> Unit) {
-    Column(modifier.fillMaxSize().padding(24.dp), verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally) {
+private fun ResultPage(item: LibraryFile, modifier: Modifier = Modifier, onBack: () -> Unit, onPlay: () -> Unit, onShare: () -> Unit, onSave: () -> Unit, onHistory: () -> Unit) {
+    Column(modifier.fillMaxSize().padding(horizontal = 20.dp, vertical = 12.dp), verticalArrangement = Arrangement.spacedBy(18.dp)) {
+        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            Text("‹", color = Ink, fontSize = 34.sp, modifier = Modifier.clickable(onClick = onBack).padding(end = 12.dp))
+            Text("Conversion Result", color = Ink, fontSize = 20.sp, fontWeight = FontWeight.ExtraBold, modifier = Modifier.weight(1f))
+            Icon(Icons.Default.Folder, contentDescription = "History", tint = Mint, modifier = Modifier.size(26.dp).clickable(onClick = onHistory))
+        }
+        Column(Modifier.fillMaxWidth().weight(1f), verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally) {
         Icon(Icons.Default.CheckCircle, null, tint = Mint, modifier = Modifier.size(64.dp))
         Spacer(Modifier.height(16.dp))
         Text("Conversion Complete", color = Ink, fontSize = 23.sp, fontWeight = FontWeight.ExtraBold)
@@ -568,7 +575,8 @@ private fun ResultPage(item: LibraryFile, modifier: Modifier = Modifier, onPlay:
             androidx.compose.material3.OutlinedButton(onClick = onSave) { Text("Save") }
         }
         androidx.compose.material3.OutlinedButton(onClick = onShare, modifier = Modifier.fillMaxWidth()) { Text("Share") }
-        TextButton(onClick = onDone) { Text("Go to My Files") }
+        TextButton(onClick = onHistory) { Text("View conversion history") }
+        }
     }
 }
 
