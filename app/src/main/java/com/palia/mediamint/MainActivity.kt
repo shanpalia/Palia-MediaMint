@@ -137,6 +137,7 @@ private val popularTools = listOf(
 private fun MediaMintApp() {
     var selectedTab by remember { mutableStateOf("Home") }
     var activeTool by remember { mutableStateOf<MediaTool?>(null) }
+    var isProcessing by remember { mutableStateOf(false) }
     var resultFile by remember { mutableStateOf<LibraryFile?>(null) }
     val libraryFiles = remember { mutableStateListOf<LibraryFile>() }
     val context = LocalContext.current
@@ -153,6 +154,7 @@ private fun MediaMintApp() {
     }
     BackHandler {
         if (resultFile != null) { resultFile = null }
+        else if (activeTool != null) { activeTool = null }
         else if (selectedTab != "Home") {
             selectedTab = "Home"
             activeTool = null
@@ -192,6 +194,7 @@ private fun MediaMintApp() {
         if (uri != null && tool != null) {
             scope.launch {
                 try {
+                    isProcessing = true
                     val result = withContext(Dispatchers.IO) {
                         MediaProcessing.process(context, uri, tool.title)
                     }
@@ -212,7 +215,9 @@ private fun MediaMintApp() {
                     libraryFiles.clear()
                     libraryFiles.addAll(MediaLibrary.list(context))
                     resultFile = saved
+                    isProcessing = false
                 } catch (error: Exception) {
+                    isProcessing = false
                     snackbar.showSnackbar(error.localizedMessage ?: "This feature is not available yet.")
                 }
             }
@@ -221,7 +226,6 @@ private fun MediaMintApp() {
 
     fun openTool(tool: MediaTool) {
         activeTool = tool
-        filePicker.launch(tool.mimeTypes)
     }
 
     Scaffold(
@@ -255,6 +259,8 @@ private fun MediaMintApp() {
                 onShare = { shareLibraryFile(context, resultFile!!) },
                 onSave = { outputToSave = resultFile; saveFile.launch(resultFile!!.fileName) },
                 onDone = { resultFile = null; selectedTab = "Files" })
+        } else if (activeTool != null) {
+            ToolWorkspace(tool = activeTool!!, isProcessing = isProcessing, modifier = Modifier.padding(padding), onBack = { activeTool = null }, onChooseFile = { if (!isProcessing) filePicker.launch(activeTool!!.mimeTypes) })
         } else when (selectedTab) {
             "Home" -> HomeContent(
                 modifier = Modifier.padding(padding),
@@ -576,6 +582,64 @@ private fun FilesPage(files: List<LibraryFile>, modifier: Modifier = Modifier, o
                     }
                 }
             }
+        }
+    }
+}
+
+
+@Composable
+private fun ToolWorkspace(tool: MediaTool, isProcessing: Boolean, modifier: Modifier = Modifier, onBack: () -> Unit, onChooseFile: () -> Unit) {
+    LazyColumn(modifier.fillMaxSize(), contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 20.dp, vertical = 18.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+        item {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text("‹", color = Ink, fontSize = 34.sp, modifier = Modifier.clickable(onClick = onBack).padding(end = 12.dp))
+                Column {
+                    Text(tool.title, color = Ink, fontSize = 23.sp, fontWeight = FontWeight.ExtraBold)
+                    Text("Palia MediaMint • Professional Tool", color = Muted, fontSize = 12.sp)
+                }
+            }
+        }
+        item {
+            Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(24.dp)).background(Brush.linearGradient(listOf(tool.background, Color.White))).padding(22.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Box(Modifier.size(86.dp).clip(RoundedCornerShape(25.dp)).background(Color.White), contentAlignment = Alignment.Center) {
+                    Icon(tool.icon, null, tint = tool.tint, modifier = Modifier.size(48.dp))
+                }
+                Text(tool.title, color = Ink, fontSize = 21.sp, fontWeight = FontWeight.ExtraBold)
+                Text(tool.subtitle, color = Muted, fontSize = 13.sp, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+            }
+        }
+        item {
+            Text("How it works", color = Ink, fontSize = 17.sp, fontWeight = FontWeight.Bold)
+            Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(18.dp)).background(Color.White).padding(16.dp), verticalArrangement = Arrangement.spacedBy(13.dp)) {
+                WorkspaceStep("1", "Select your file", "Choose a file from your phone.")
+                WorkspaceStep("2", "Convert automatically", "MediaMint processes it on your device.")
+                WorkspaceStep("3", "Preview and save", "Open, play, share or save the result.")
+            }
+        }
+        item {
+            androidx.compose.material3.Button(onClick = onChooseFile, enabled = !isProcessing, modifier = Modifier.fillMaxWidth().height(54.dp), shape = RoundedCornerShape(16.dp)) {
+                if (isProcessing) {
+                    androidx.compose.material3.CircularProgressIndicator(color = Color.White, modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
+                    Text("  Processing...", fontWeight = FontWeight.Bold)
+                } else {
+                    Icon(Icons.Default.Folder, null)
+                    Text("  Choose File", fontWeight = FontWeight.Bold)
+                }
+            }
+            Text("Your selected file stays on your device.", color = Muted, fontSize = 11.sp, modifier = Modifier.fillMaxWidth().padding(top = 8.dp), textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+        }
+    }
+}
+
+@Composable
+private fun WorkspaceStep(number: String, title: String, subtitle: String) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Box(Modifier.size(34.dp).clip(CircleShape).background(PaleMint), contentAlignment = Alignment.Center) {
+            Text(number, color = DeepMint, fontWeight = FontWeight.ExtraBold)
+        }
+        Column(Modifier.padding(start = 12.dp)) {
+            Text(title, color = Ink, fontSize = 13.sp, fontWeight = FontWeight.Bold)
+            Text(subtitle, color = Muted, fontSize = 11.sp)
         }
     }
 }
