@@ -340,10 +340,10 @@ private fun CategoryCard(
             .clickable(onClick = onClick).padding(12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Icon(icon, null, tint = tint, modifier = Modifier.size(35.dp))
+        Icon(icon, null, tint = tint, modifier = Modifier.size(30.dp))
         Column(Modifier.weight(1f).padding(start = 9.dp)) {
-            Text(title, color = Ink, fontSize = 14.sp, fontWeight = FontWeight.ExtraBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
-            Text(subtitle, color = Ink.copy(alpha = 0.82f), fontSize = 10.sp, lineHeight = 13.sp, maxLines = 2, overflow = TextOverflow.Ellipsis)
+            Text(title, color = Ink, fontSize = 12.sp, lineHeight = 14.sp, fontWeight = FontWeight.ExtraBold, maxLines = 2, overflow = TextOverflow.Clip)
+            Text(subtitle, color = Ink.copy(alpha = 0.82f), fontSize = 9.sp, lineHeight = 12.sp, maxLines = 3, overflow = TextOverflow.Clip)
         }
         Icon(Icons.Default.ChevronRight, null, tint = tint, modifier = Modifier.size(18.dp))
     }
