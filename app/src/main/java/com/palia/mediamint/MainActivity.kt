@@ -48,6 +48,8 @@ import androidx.compose.material.icons.filled.NotificationsNone
 import androidx.compose.material.icons.filled.PictureAsPdf
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.SaveAlt
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.VideoLibrary
 import androidx.compose.material3.AlertDialog
@@ -559,8 +561,11 @@ private fun ResultPage(item: LibraryFile, modifier: Modifier = Modifier, onBack:
     Column(modifier.fillMaxSize().padding(horizontal = 20.dp, vertical = 12.dp), verticalArrangement = Arrangement.spacedBy(18.dp)) {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             Text("‹", color = Ink, fontSize = 34.sp, modifier = Modifier.clickable(onClick = onBack).padding(end = 12.dp))
-            Text("Conversion Result", color = Ink, fontSize = 20.sp, fontWeight = FontWeight.ExtraBold, modifier = Modifier.weight(1f))
-            Icon(Icons.Default.Folder, contentDescription = "History", tint = Mint, modifier = Modifier.size(26.dp).clickable(onClick = onHistory))
+            Text("Conversion Result", color = Ink, fontSize = 18.sp, fontWeight = FontWeight.ExtraBold, modifier = Modifier.weight(1f))
+            Icon(Icons.Default.PlayArrow, contentDescription = "Play", tint = Mint, modifier = Modifier.size(25.dp).clickable(onClick = onPlay))
+            Icon(Icons.Default.SaveAlt, contentDescription = "Save", tint = Mint, modifier = Modifier.padding(start = 14.dp).size(24.dp).clickable(onClick = onSave))
+            Icon(Icons.Default.Share, contentDescription = "Share", tint = Mint, modifier = Modifier.padding(start = 14.dp).size(23.dp).clickable(onClick = onShare))
+            Icon(Icons.Default.Folder, contentDescription = "History", tint = Mint, modifier = Modifier.padding(start = 14.dp).size(25.dp).clickable(onClick = onHistory))
         }
         Column(Modifier.fillMaxWidth().weight(1f), verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally) {
         Icon(Icons.Default.CheckCircle, null, tint = Mint, modifier = Modifier.size(64.dp))
