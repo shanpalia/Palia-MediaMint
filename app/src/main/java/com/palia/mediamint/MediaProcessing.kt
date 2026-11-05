@@ -5,10 +5,9 @@ import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.pdf.PdfDocument
 import android.graphics.pdf.PdfRenderer
-import android.media.MediaExtractor
-import android.media.MediaFormat
+import com.arthenica.ffmpegkit.FFmpegKit
+import com.arthenica.ffmpegkit.ReturnCode
 import android.media.MediaMetadataRetriever
-import android.media.MediaMuxer
 import android.net.Uri
 import android.os.ParcelFileDescriptor
 import java.io.ByteArrayOutputStream
@@ -147,48 +146,36 @@ object MediaProcessing {
         }
     }
 
-    // Android's built-in muxer exports the original audio stream as M4A/AAC, not MP3.
+    // FFmpeg encodes the selected video's audio stream into a real MP3 file.
     private fun videoToAudio(context: Context, uri: Uri): ProcessedMedia {
-        val extractor = MediaExtractor()
-        val temp = File.createTempFile("palia_audio_", ".m4a", context.cacheDir)
-        var muxer: MediaMuxer? = null
+        val input = File.createTempFile("palia_video_", ".input", context.cacheDir)
+        val output = File.createTempFile("palia_audio_", ".mp3", context.cacheDir)
         try {
-            extractor.setDataSource(context, uri, null)
-            var audioTrack = -1
-            var sourceFormat: MediaFormat? = null
-            for (i in 0 until extractor.trackCount) {
-                val format = extractor.getTrackFormat(i)
-                val mime = format.getString(MediaFormat.KEY_MIME) ?: continue
-                if (mime.startsWith("audio/")) {
-                    audioTrack = i
-                    sourceFormat = format
-                    break
-                }
+            context.contentResolver.openInputStream(uri)?.use { source ->
+                input.outputStream().use { target -> source.copyTo(target) }
+            } ?: throw IllegalArgumentException("Cannot read selected video.")
+
+            val session = FFmpegKit.executeWithArguments(
+                arrayOf(
+                    "-y", "-i", input.absolutePath,
+                    "-map", "0:a:0", "-vn",
+                    "-codec:a", "libmp3lame",
+                    "-b:a", "192k",
+                    "-id3v2_version", "3",
+                    output.absolutePath
+                )
+            )
+            if (!ReturnCode.isSuccess(session.returnCode) || !output.exists() || output.length() == 0L) {
+                val details = session.failStackTrace ?: session.allLogsAsString
+                throw IllegalArgumentException(
+                    if (details.isNullOrBlank()) "MP3 conversion failed. Check that the video contains an audio track."
+                    else "MP3 conversion failed: " + details.take(500)
+                )
             }
-            require(audioTrack >= 0 && sourceFormat != null) { "No audio track found in this video." }
-            extractor.selectTrack(audioTrack)
-            muxer = MediaMuxer(temp.absolutePath, MediaMuxer.OutputFormat.MUXER_OUTPUT_MPEG_4)
-            val outputTrack = muxer.addTrack(sourceFormat)
-            muxer.start()
-            val buffer = java.nio.ByteBuffer.allocate(1024 * 1024)
-            val info = android.media.MediaCodec.BufferInfo()
-            while (true) {
-                info.offset = 0
-                info.size = extractor.readSampleData(buffer, 0)
-                if (info.size < 0) break
-                info.presentationTimeUs = extractor.sampleTime
-                info.flags = extractor.sampleFlags
-                muxer.writeSampleData(outputTrack, buffer, info)
-                if (!extractor.advance()) break
-            }
-            muxer.stop()
-            muxer.release()
-            muxer = null
-            return ProcessedMedia("Palia_Audio.m4a", "audio/mp4", temp.readBytes())
+            return ProcessedMedia("Palia_Audio.mp3", "audio/mpeg", output.readBytes())
         } finally {
-            try { muxer?.release() } catch (_: Exception) { }
-            extractor.release()
-            temp.delete()
+            input.delete()
+            output.delete()
         }
     }
 }
