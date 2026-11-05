@@ -1,8 +1,11 @@
 package com.palia.mediamint
 
+import android.app.Activity
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
@@ -59,12 +62,14 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
@@ -126,6 +131,25 @@ private val popularTools = listOf(
 private fun MediaMintApp() {
     var selectedTab by remember { mutableStateOf("Home") }
     var activeTool by remember { mutableStateOf<MediaTool?>(null) }
+    val context = LocalContext.current
+    val notificationPermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { }
+    LaunchedEffect(Unit) {
+        if (Build.VERSION.SDK_INT >= 33) {
+            val prefs = context.getSharedPreferences("mediamint_permissions", android.content.Context.MODE_PRIVATE)
+            if (!prefs.getBoolean("notification_asked", false)) {
+                prefs.edit().putBoolean("notification_asked", true).apply()
+                notificationPermission.launch(android.Manifest.permission.POST_NOTIFICATIONS)
+            }
+        }
+    }
+    BackHandler {
+        if (selectedTab != "Home") {
+            selectedTab = "Home"
+            activeTool = null
+        } else {
+            (context as? Activity)?.moveTaskToBack(true)
+        }
+    }
     var pickedFile by remember { mutableStateOf<Uri?>(null) }
     var showInfo by remember { mutableStateOf(false) }
     val snackbar = remember { SnackbarHostState() }
@@ -151,6 +175,7 @@ private fun MediaMintApp() {
         containerColor = Canvas,
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
         snackbarHost = { SnackbarHost(snackbar) },
+        topBar = { AppHeader(onPro = { selectedTab = "Pro" }, onNotifications = { showInfo = true }) },
         bottomBar = {
             NavigationBar(containerColor = Color.White, tonalElevation = 8.dp) {
                 val tabs = listOf(
@@ -200,6 +225,37 @@ private fun MediaMintApp() {
 }
 
 @Composable
+private fun AppHeader(onPro: () -> Unit, onNotifications: () -> Unit) {
+    Row(
+        modifier = Modifier.fillMaxWidth()
+            .background(Canvas)
+            .windowInsetsPadding(WindowInsets.statusBars)
+            .padding(horizontal = 18.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Box(
+            modifier = Modifier.size(48.dp).clip(RoundedCornerShape(15.dp))
+                .background(Brush.linearGradient(listOf(Mint, DeepMint))),
+            contentAlignment = Alignment.Center
+        ) {
+            Text("P", color = Color.White, fontSize = 32.sp, fontWeight = FontWeight.Black)
+        }
+        Column(Modifier.weight(1f).padding(start = 10.dp)) {
+            Text("Palia MediaMint", color = Ink, fontSize = 19.sp, fontWeight = FontWeight.ExtraBold, maxLines = 1)
+            Text("All-in-One Media & PDF Tools", color = Muted, fontSize = 11.sp, maxLines = 1)
+        }
+        Surface(color = PaleMint, shape = RoundedCornerShape(50), modifier = Modifier.clickable(onClick = onPro)) {
+            Row(Modifier.padding(horizontal = 11.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.Default.Star, null, tint = Mint, modifier = Modifier.size(16.dp))
+                Text(" Pro", color = DeepMint, fontWeight = FontWeight.Bold, fontSize = 13.sp)
+            }
+        }
+        Icon(Icons.Default.NotificationsNone, contentDescription = "Notifications", tint = Ink,
+            modifier = Modifier.padding(start = 12.dp).size(26.dp).clickable(onClick = onNotifications))
+    }
+}
+
+@Composable
 private fun HomeContent(
     modifier: Modifier = Modifier,
     onToolClick: (MediaTool) -> Unit,
@@ -209,35 +265,12 @@ private fun HomeContent(
     onNotifications: () -> Unit
 ) {
     LazyColumn(
-        modifier = modifier.fillMaxSize().windowInsetsPadding(WindowInsets.statusBars),
+        modifier = modifier.fillMaxSize(),
         contentPadding = androidx.compose.foundation.layout.PaddingValues(
             start = 18.dp, top = 12.dp, end = 18.dp, bottom = 20.dp
         ),
         verticalArrangement = Arrangement.spacedBy(18.dp)
     ) {
-        item {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Box(
-                    modifier = Modifier.size(44.dp).clip(RoundedCornerShape(14.dp))
-                        .background(Brush.linearGradient(listOf(Mint, DeepMint))),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text("P", color = Color.White, fontSize = 30.sp, fontWeight = FontWeight.Black)
-                }
-                Column(Modifier.weight(1f).padding(start = 10.dp)) {
-                    Text("Palia MediaMint", color = Ink, fontSize = 19.sp, fontWeight = FontWeight.ExtraBold)
-                    Text("All-in-One Media & PDF Tools", color = Muted, fontSize = 11.sp)
-                }
-                Surface(color = PaleMint, shape = RoundedCornerShape(50), modifier = Modifier.clickable(onClick = onPro)) {
-                    Row(Modifier.padding(horizontal = 11.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Default.Star, null, tint = Mint, modifier = Modifier.size(16.dp))
-                        Text(" Pro", color = DeepMint, fontWeight = FontWeight.Bold, fontSize = 13.sp)
-                    }
-                }
-                Icon(Icons.Default.NotificationsNone, contentDescription = "Notifications", tint = Ink,
-                    modifier = Modifier.padding(start = 12.dp).size(26.dp).clickable(onClick = onNotifications))
-            }
-        }
         item {
             HeroBanner()
         }
