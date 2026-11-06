@@ -112,15 +112,15 @@ class MainActivity : ComponentActivity() {
             android.view.View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR or
                 android.view.View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR
         setContent {
-            MediaMintTheme {
-                MediaMintApp()
+            Mind MintTheme {
+                Mind MintApp()
             }
         }
     }
 }
 
 @Composable
-private fun MediaMintTheme(content: @Composable () -> Unit) {
+private fun Mind MintTheme(content: @Composable () -> Unit) {
     MaterialTheme(content = content)
 }
 
@@ -141,7 +141,7 @@ private val popularTools = listOf(
 )
 
 @Composable
-private fun MediaMintApp() {
+private fun Mind MintApp() {
     var selectedTab by remember { mutableStateOf("Home") }
     var activeTool by remember { mutableStateOf<MediaTool?>(null) }
     var isProcessing by remember { mutableStateOf(false) }
@@ -298,15 +298,15 @@ private fun MediaMintApp() {
                 onOpen = { if (it.mimeType.startsWith("audio/")) playingFile = it else openLibraryFile(context, it) },
                 onShare = { shareLibraryFile(context, it) },
                 onSave = { outputToSave = it; saveFile.launch(it.fileName) })
-            "Pro" -> SimplePage("Palia MediaMint Pro", "Premium plans and limits will be configured after the online service is ready.", Icons.Default.Star, Modifier.padding(padding))
-            else -> SimplePage("More", "Settings • Help & Support • About Palia MediaMint", Icons.Default.Settings, Modifier.padding(padding))
+            "Pro" -> SimplePage("Mind Mint Pro", "Premium plans and limits will be configured after the online service is ready.", Icons.Default.Star, Modifier.padding(padding))
+            else -> SimplePage("More", "Settings • Help & Support • About Mind Mint", Icons.Default.Settings, Modifier.padding(padding))
         }
     }
 
     if (showInfo) {
         AlertDialog(
             onDismissRequest = { showInfo = false },
-            title = { Text("Palia MediaMint") },
+            title = { Text("Mind Mint") },
             text = { Text("All-in-One Media & PDF Tools
 
 PaliaAPK HUB
@@ -333,7 +333,7 @@ private fun AppHeader(onPro: () -> Unit, onNotifications: () -> Unit) {
             Text("P", color = Color.White, fontSize = 32.sp, fontWeight = FontWeight.Black)
         }
         Column(Modifier.weight(1f).padding(start = 10.dp)) {
-            Text("Palia MediaMint", color = Ink, fontSize = 19.sp, fontWeight = FontWeight.ExtraBold, maxLines = 1)
+            Text("Mind Mint", color = Ink, fontSize = 19.sp, fontWeight = FontWeight.ExtraBold, maxLines = 1)
             Text("All-in-One Media & PDF Tools", color = Muted, fontSize = 11.sp, maxLines = 1)
         }
         Surface(color = PaleMint, shape = RoundedCornerShape(50), modifier = Modifier.clickable(onClick = onPro)) {
@@ -630,7 +630,7 @@ private fun ToolWorkspace(tool: MediaTool, isProcessing: Boolean, modifier: Modi
                 Text("‹", color = Ink, fontSize = 34.sp, modifier = Modifier.clickable(onClick = onBack).padding(end = 12.dp))
                 Column {
                     Text(tool.title, color = Ink, fontSize = 23.sp, fontWeight = FontWeight.ExtraBold)
-                    Text("Palia MediaMint • Professional Tool", color = Muted, fontSize = 12.sp)
+                    Text("Mind Mint • Professional Tool", color = Muted, fontSize = 12.sp)
                 }
             }
         }
@@ -647,7 +647,7 @@ private fun ToolWorkspace(tool: MediaTool, isProcessing: Boolean, modifier: Modi
             Text("How it works", color = Ink, fontSize = 17.sp, fontWeight = FontWeight.Bold)
             Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(18.dp)).background(Color.White).padding(16.dp), verticalArrangement = Arrangement.spacedBy(13.dp)) {
                 WorkspaceStep("1", "Select your file", "Choose a file from your phone.")
-                WorkspaceStep("2", "Convert automatically", "MediaMint processes it on your device.")
+                WorkspaceStep("2", "Convert automatically", "Mind Mint processes it on your device.")
                 WorkspaceStep("3", "Preview and save", "Open, play, share or save the result.")
             }
         }
@@ -725,7 +725,7 @@ private fun AudioPlayerPage(item: LibraryFile, modifier: Modifier = Modifier, on
             Text("‹", color = Ink, fontSize = 34.sp, modifier = Modifier.clickable(onClick = onBack).padding(end = 12.dp))
             Column {
                 Text("Now Playing", color = Ink, fontSize = 21.sp, fontWeight = FontWeight.ExtraBold)
-                Text("Palia MediaMint Audio Player", color = Muted, fontSize = 12.sp)
+                Text("Mind Mint Audio Player", color = Muted, fontSize = 12.sp)
             }
         }
         Column(Modifier.fillMaxWidth().weight(1f), verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally) {
