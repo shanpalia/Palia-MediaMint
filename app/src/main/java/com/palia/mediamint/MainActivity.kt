@@ -3,6 +3,7 @@ package com.palia.mediamint
 import android.app.Activity
 import android.content.Intent
 import android.net.Uri
+import android.media.MediaPlayer
 import android.provider.OpenableColumns
 import android.os.Build
 import android.os.Bundle
@@ -47,6 +48,8 @@ import androidx.compose.material.icons.filled.MoreHoriz
 import androidx.compose.material.icons.filled.NotificationsNone
 import androidx.compose.material.icons.filled.PictureAsPdf
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Pause
+import androidx.compose.material.icons.filled.Stop
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.SaveAlt
 import androidx.compose.material.icons.filled.Share
@@ -61,6 +64,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -87,6 +91,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -141,6 +146,7 @@ private fun MediaMintApp() {
     var activeTool by remember { mutableStateOf<MediaTool?>(null) }
     var isProcessing by remember { mutableStateOf(false) }
     var resultFile by remember { mutableStateOf<LibraryFile?>(null) }
+    var playingFile by remember { mutableStateOf<LibraryFile?>(null) }
     val libraryFiles = remember { mutableStateListOf<LibraryFile>() }
     val context = LocalContext.current
     LaunchedEffect(Unit) { libraryFiles.clear(); libraryFiles.addAll(MediaLibrary.list(context)) }
@@ -155,7 +161,8 @@ private fun MediaMintApp() {
         }
     }
     BackHandler {
-        if (resultFile != null) { resultFile = null }
+        if (playingFile != null) { playingFile = null }
+        else if (resultFile != null) { resultFile = null }
         else if (activeTool != null) { activeTool = null }
         else if (selectedTab != "Home") {
             selectedTab = "Home"
@@ -249,6 +256,7 @@ private fun MediaMintApp() {
                         selected = selectedTab == label && activeTool == null && resultFile == null,
                         onClick = {
                             resultFile = null
+                            playingFile = null
                             activeTool = null
                             selectedTab = label
                             if (label == "Files") {
@@ -263,10 +271,12 @@ private fun MediaMintApp() {
             }
         }
     ) { padding ->
-        if (resultFile != null) {
+        if (playingFile != null) {
+            AudioPlayerPage(item = playingFile!!, modifier = Modifier.padding(padding), onBack = { playingFile = null })
+        } else if (resultFile != null) {
             ResultPage(item = resultFile!!, modifier = Modifier.padding(padding),
                 onBack = { resultFile = null; activeTool = null; selectedTab = "Files" },
-                onPlay = { openLibraryFile(context, resultFile!!) },
+                onPlay = { if (resultFile!!.mimeType.startsWith("audio/")) playingFile = resultFile else openLibraryFile(context, resultFile!!) },
                 onShare = { shareLibraryFile(context, resultFile!!) },
                 onSave = { outputToSave = resultFile; saveFile.launch(resultFile!!.fileName) },
                 onHistory = { resultFile = null; activeTool = null; selectedTab = "Files"; libraryFiles.clear(); libraryFiles.addAll(MediaLibrary.list(context)) })
@@ -285,7 +295,7 @@ private fun MediaMintApp() {
             )
             "Tools" -> ToolsContent(Modifier.padding(padding), ::openTool)
             "Files" -> FilesPage(files = libraryFiles, modifier = Modifier.padding(padding),
-                onOpen = { openLibraryFile(context, it) },
+                onOpen = { if (it.mimeType.startsWith("audio/")) playingFile = it else openLibraryFile(context, it) },
                 onShare = { shareLibraryFile(context, it) },
                 onSave = { outputToSave = it; saveFile.launch(it.fileName) })
             "Pro" -> SimplePage("Palia MediaMint Pro", "Premium plans and limits will be configured after the online service is ready.", Icons.Default.Star, Modifier.padding(padding))
@@ -663,4 +673,82 @@ private fun WorkspaceStep(number: String, title: String, subtitle: String) {
             Text(subtitle, color = Muted, fontSize = 11.sp)
         }
     }
+}
+\n
+@Composable
+private fun AudioPlayerPage(item: LibraryFile, modifier: Modifier = Modifier, onBack: () -> Unit) {
+    val context = LocalContext.current
+    var player by remember(item.path) { mutableStateOf<MediaPlayer?>(null) }
+    var ready by remember(item.path) { mutableStateOf(false) }
+    var playing by remember(item.path) { mutableStateOf(false) }
+    var duration by remember(item.path) { mutableStateOf(0) }
+    var position by remember(item.path) { mutableStateOf(0f) }
+    var error by remember(item.path) { mutableStateOf<String?>(null) }
+
+    LaunchedEffect(item.path) {
+        val mp = MediaPlayer()
+        player = mp
+        try {
+            mp.setDataSource(item.path)
+            mp.setOnPreparedListener {
+                duration = it.duration.coerceAtLeast(0)
+                ready = true
+                it.start()
+                playing = true
+            }
+            mp.setOnCompletionListener { playing = false; position = duration.toFloat() }
+            mp.setOnErrorListener { _, _, _ -> error = "Audio play nahi ho paya."; true }
+            mp.prepareAsync()
+        } catch (e: Exception) {
+            error = e.localizedMessage ?: "Audio open failed"
+        }
+    }
+    LaunchedEffect(player, ready, playing) {
+        while (ready && playing) {
+            player?.let { position = it.currentPosition.toFloat() }
+            delay(300)
+        }
+    }
+    androidx.compose.runtime.DisposableEffect(item.path) {
+        onDispose {
+            player?.release()
+            player = null
+        }
+    }
+    Column(modifier.fillMaxSize().padding(22.dp), verticalArrangement = Arrangement.spacedBy(18.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text("‹", color = Ink, fontSize = 34.sp, modifier = Modifier.clickable(onClick = onBack).padding(end = 12.dp))
+            Column {
+                Text("Now Playing", color = Ink, fontSize = 21.sp, fontWeight = FontWeight.ExtraBold)
+                Text("Palia MediaMint Audio Player", color = Muted, fontSize = 12.sp)
+            }
+        }
+        Column(Modifier.fillMaxWidth().weight(1f), verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally) {
+            Box(Modifier.size(170.dp).clip(RoundedCornerShape(38.dp)).background(PaleMint), contentAlignment = Alignment.Center) {
+                Icon(Icons.Default.PlayArrow, null, tint = Mint, modifier = Modifier.size(100.dp))
+            }
+            Spacer(Modifier.height(26.dp))
+            Text(item.fileName, color = Ink, fontSize = 18.sp, fontWeight = FontWeight.ExtraBold, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+            Text(android.text.format.Formatter.formatShortFileSize(context, item.sizeBytes), color = Muted, fontSize = 12.sp)
+            Spacer(Modifier.height(20.dp))
+            Slider(value = if (duration > 0) position.coerceIn(0f, duration.toFloat()) else 0f, onValueChange = { position = it }, onValueChangeFinished = { player?.seekTo(position.toInt()) }, valueRange = 0f..duration.coerceAtLeast(1).toFloat(), enabled = ready)
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                Text(formatAudioTime(position.toInt()), color = Muted, fontSize = 12.sp)
+                Text(formatAudioTime(duration), color = Muted, fontSize = 12.sp)
+            }
+            Spacer(Modifier.height(12.dp))
+            androidx.compose.material3.FilledIconButton(onClick = {
+                player?.let { if (it.isPlaying) { it.pause(); playing = false } else { if (duration > 0 && it.currentPosition >= duration) it.seekTo(0); it.start(); playing = true } }
+            }, enabled = ready, modifier = Modifier.size(68.dp)) {
+                Icon(if (playing) Icons.Default.Pause else Icons.Default.PlayArrow, contentDescription = "Play or pause", modifier = Modifier.size(38.dp))
+            }
+            if (error != null) Text(error!!, color = Color.Red, fontSize = 13.sp)
+            if (!ready && error == null) Text("Loading audio...", color = Muted, fontSize = 13.sp)
+        }
+    }
+}
+
+private fun formatAudioTime(ms: Int): String {
+    val total = (ms.coerceAtLeast(0) / 1000)
+    return "%d:%02d".format(total / 60, total % 60)
 }
