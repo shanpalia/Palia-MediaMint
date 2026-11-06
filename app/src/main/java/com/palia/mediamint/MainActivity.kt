@@ -407,8 +407,7 @@ private fun HeroBanner() {
             .padding(18.dp)
     ) {
         Column(Modifier.fillMaxWidth(0.72f), verticalArrangement = Arrangement.spacedBy(7.dp)) {
-            Text("All-in-One Media,
-Image & PDF Tools", color = Ink, fontSize = 21.sp, lineHeight = 25.sp, fontWeight = FontWeight.ExtraBold)
+            Text("All-in-One Media,\nImage & PDF Tools", color = Ink, fontSize = 21.sp, lineHeight = 25.sp, fontWeight = FontWeight.ExtraBold)
             FeatureLine("Convert  •  Edit  •  Compress")
             FeatureLine("Remove Watermark")
             FeatureLine("Fast & High Quality")
