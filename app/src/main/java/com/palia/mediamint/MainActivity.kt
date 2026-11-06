@@ -307,7 +307,10 @@ private fun MediaMintApp() {
         AlertDialog(
             onDismissRequest = { showInfo = false },
             title = { Text("Palia MediaMint") },
-            text = { Text("All-in-One Media & PDF Tools\n\nPaliaAPK HUB\nDeveloper By shanpalia") },
+            text = { Text("All-in-One Media & PDF Tools
+
+PaliaAPK HUB
+Developer By shanpalia") },
             confirmButton = { TextButton(onClick = { showInfo = false }) { Text("Close") } }
         )
     }
@@ -404,7 +407,8 @@ private fun HeroBanner() {
             .padding(18.dp)
     ) {
         Column(Modifier.fillMaxWidth(0.72f), verticalArrangement = Arrangement.spacedBy(7.dp)) {
-            Text("All-in-One Media,\nImage & PDF Tools", color = Ink, fontSize = 21.sp, lineHeight = 25.sp, fontWeight = FontWeight.ExtraBold)
+            Text("All-in-One Media,
+Image & PDF Tools", color = Ink, fontSize = 21.sp, lineHeight = 25.sp, fontWeight = FontWeight.ExtraBold)
             FeatureLine("Convert  •  Edit  •  Compress")
             FeatureLine("Remove Watermark")
             FeatureLine("Fast & High Quality")
@@ -674,7 +678,8 @@ private fun WorkspaceStep(number: String, title: String, subtitle: String) {
         }
     }
 }
-\n
+
+
 @Composable
 private fun AudioPlayerPage(item: LibraryFile, modifier: Modifier = Modifier, onBack: () -> Unit) {
     val context = LocalContext.current
